@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Henry-Gesetz Simulator - TÜV SÜD IS GmbH</title>
+    <style>
+        :root {
+            --brand-dark: #0B253B;
+            --tuv-blue: #0046AD;
+            --accent-green: #02ECA6;
+            --accent-orange: #FF774B;
+            --bg-grey: #F2EFED;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: transparent;
+            color: var(--brand-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100vh;
+            min-height: 450px;
+            max-height: 480px;
+            overflow: hidden;
+            padding: 10px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 750px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 12px rgba(11, 37, 59, 0.08);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background-color: var(--brand-dark);
+            color: white;
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .title-area h1 {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .title-area p {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        /* Lang Switcher */
+        .lang-switch {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 2px;
+            gap: 2px;
+        }
+
+        .lang-btn {
+            background: transparent;
+            border: none;
+            color: #cbd5e1;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .lang-btn.active {
+            background: var(--accent-green);
+            color: var(--brand-dark);
+        }
+
+        /* Content Body */
+        .body-content {
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Tank & Canvas area */
+        .sim-container {
+            position: relative;
+            width: 100%;
+            height: 170px;
+            background: #0f172a;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #334155;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .overlay-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(11, 37, 59, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 4px 10px;
+            border-radius: 6px;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(4px);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+        }
+
+        /* Slider section */
+        .slider-section {
+            background: var(--bg-grey);
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--brand-dark);
+        }
+
+        input[type=range] {
+            width: 100%;
+            accent-color: var(--tuv-blue);
+            cursor: pointer;
+            height: 6px;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #64748b;
+        }
+
+        /* Info / Takeaway Box */
+        .info-box {
+            background: #f8fafc;
+            border-left: 3px solid var(--tuv-blue);
+            padding: 8px 12px;
+            border-radius: 0 6px 6px 0;
+            font-size: 11px;
+            line-height: 1.35;
+        }
+
+        .info-box strong {
+            color: var(--brand-dark);
+            display: block;
+            margin-bottom: 2px;
+            font-size: 11px;
+        }
+
+        .info-box span {
+            color: #475569;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <!-- Header -->
+        <div class="header">
+            <div class="title-area">
+                <h1 id="ui-title">Henry-Gesetz: Druck & Gaslöslichkeit</h1>
+                <p>TÜV SÜD IS GmbH — Interaktives Modul</p>
+            </div>
+            <div class="lang-switch">
+                <button class="lang-btn active" onclick="setLang('de')">DE</button>
+                <button class="lang-btn" onclick="setLang('en')">EN</button>
+                <button class="lang-btn" onclick="setLang('fr')">FR</button>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="body-content">
+            <!-- Simulation Viewport -->
+            <div class="sim-container">
+                <div class="overlay-badge">
+                    <div class="status-dot" id="status-dot"></div>
+                    <span id="ui-status-text">Hoher Druck: Mehr Gas gelöst</span>
+                </div>
+                <canvas id="simCanvas"></canvas>
+            </div>
+
+            <!-- Pressure Slider -->
+            <div class="slider-section">
+                <div class="slider-header">
+                    <span id="ui-slider-label">Druck im Behälter</span>
+                    <span id="pressure-val" style="color: var(--tuv-blue);">100 bar (100%)</span>
+                </div>
+                <input type="range" id="pressureSlider" min="0" max="100" value="100" oninput="updateSimulation()">
+                <div class="slider-labels">
+                    <span id="ui-low">0 bar (Entlastung / Gas tritt aus)</span>
+                    <span id="ui-high">100 bar (Kompressionsdruck)</span>
+                </div>
+            </div>
+
+            <!-- Takeaway Banner -->
+            <div class="info-box">
+                <strong id="ui-law-title">Das Henry-Gesetz:</strong>
+                <span id="ui-law-desc">Je höher der Druck über einer Flüssigkeit ist, desto mehr Gas kann in ihr gelöst werden.</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentLang = 'de';
+
+        const i18n = {
+            de: {
+                title: "Henry-Gesetz: Druck & Gaslöslichkeit",
+                statusHigh: "Hoher Druck: Gas bleibt in Lösung",
+                statusLow: "Druckabfall: Gasblasen steigen auf",
+                sliderLabel: "Druck über der Flüssigkeit",
+                low: "0% (Niederdruck / Freisetzung)",
+                high: "100% (Hochdruck)",
+                lawTitle: "Das Henry-Gesetz:",
+                lawDesc: "Je höher der Druck über einer Flüssigkeit ist, desto mehr Gas kann in ihr gelöst werden."
+            },
+            en: {
+                title: "Henry's Law: Pressure & Gas Solubility",
+                statusHigh: "High Pressure: Gas stays dissolved",
+                statusLow: "Pressure Drop: Bubbles form & rise",
+                sliderLabel: "Pressure above liquid",
+                low: "0% (Low Pressure / Release)",
+                high: "100% (High Pressure)",
+                lawTitle: "Henry's Law:",
+                lawDesc: "The higher the pressure above a liquid, the more gas can dissolve into it."
+            },
+            fr: {
+                title: "Loi de Henry : Pression et Solubilité",
+                statusHigh: "Haute pression : Gaz dissous",
+                statusLow: "Chute de pression : Libération de bulles",
+                sliderLabel: "Pression au-dessus du liquide",
+                low: "0% (Basse pression / Dégazage)",
+                high: "100% (Haute pression)",
+                lawTitle: "Loi de Henry :",
+                lawDesc: "Plus la pression au-dessus d'un liquide est élevée, plus une grande quantité de gaz peut y être dissoute."
+            }
+        };
+
+        function setLang(lang) {
+            currentLang = lang;
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            document.getElementById('ui-title').innerText = i18n[lang].title;
+            document.getElementById('ui-slider-label').innerText = i18n[lang].sliderLabel;
+            document.getElementById('ui-low').innerText = i18n[lang].low;
+            document.getElementById('ui-high').innerText = i18n[lang].high;
+            document.getElementById('ui-law-title').innerText = i18n[lang].lawTitle;
+            document.getElementById('ui-law-desc').innerText = i18n[lang].lawDesc;
+            updateSimulation();
+        }
+
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Particle system for dissolved gas & bubbles
+        const particles = [];
+        const numParticles = 45;
+
+        for (let i = 0; i < numParticles; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: 70 + Math.random() * 90,
+                vx: (Math.random() - 0.5) * 0.4,
+                vy: (Math.random() - 0.5) * 0.4,
+                radius: 3 + Math.random() * 2,
+                baseY: 70 + Math.random() * 90
+            });
+        }
+
+        function updateSimulation() {
+            const sliderVal = document.getElementById('pressureSlider').value; // 0 to 100
+            const pressureFrac = sliderVal / 100;
+
+            document.getElementById('pressure-val').innerText = `${sliderVal}%`;
+
+            const statusText = document.getElementById('ui-status-text');
+            const statusDot = document.getElementById('status-dot');
+
+            if (pressureFrac > 0.5) {
+                statusText.innerText = i18n[currentLang].statusHigh;
+                statusDot.style.background = 'var(--accent-green)';
+            } else {
+                statusText.innerText = i18n[currentLang].statusLow;
+                statusDot.style.background = 'var(--accent-orange)';
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const sliderVal = document.getElementById('pressureSlider').value;
+            const pRatio = sliderVal / 100; // 1 = high pressure, 0 = low pressure
+
+            // Draw Tank Liquid Background
+            ctx.fillStyle = 'rgba(0, 70, 173, 0.25)';
+            ctx.fillRect(0, 50, canvas.width, canvas.height - 50);
+
+            // Liquid Surface Line
+            ctx.strokeStyle = '#02ECA6';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 50);
+            ctx.lineTo(canvas.width, 50);
+            ctx.stroke();
+
+            // Gas headspace above liquid
+            ctx.fillStyle = 'rgba(2, 236, 166, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, 50);
+
+            // Draw Piston / Headspace Pressure Indicator
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.15) kamar';
+            ctx.fillRect(0, 10, canvas.width, 10 * (1 - pRatio));
+
+            // Update & Draw Particles
+            particles.forEach(p => {
+                if (pRatio < 0.4) {
+                    // Low pressure: Gas comes out of solution and bubbles rise to surface
+                    p.y -= (1.2 + Math.random() * 1.5);
+                    p.x += Math.sin(p.y * 0.05) * 0.6;
+                    if (p.y < 55) {
+                        p.y = canvas.height - 10;
+                        p.x = Math.random() * canvas.width;
+                    }
+                } else {
+                    // High pressure: Particles stay dissolved in liquid with slight Brownian motion
+                    p.y += p.vy * (1.5 - pRatio);
+                    p.x += p.vx;
+                    if (p.y > canvas.height - 5) p.y = 55;
+                    if (p.y < 55) p.y = 55;
+                }
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                if (pRatio < 0.4) {
+                    // Bubbles (translucent with white rim)
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    ctx.strokeStyle = '#02ECA6';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                } else {
+                    // Dissolved gas particles (vivid green/cyan)
+                    ctx.fillStyle = '#02ECA6';
+                }
+                ctx.fill();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        updateSimulation();
+        animate();
+    </script>
+</body>
+</html>
